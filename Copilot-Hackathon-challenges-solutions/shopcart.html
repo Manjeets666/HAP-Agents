@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+        }
+        .product {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #fff;
+        }
+        .product img {
+            max-width: 100px;
+            margin-right: 10px;
+        }
+        .product-details {
+            display: flex;
+            align-items: center;
+        }
+        .product-info {
+            flex: 1;
+        }
+        .cart {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Shop Cart</h1>
+        <input type="text" id="search" placeholder="Search products..." oninput="searchProducts()">
+        <div id="product-list"></div>
+        <div class="cart">
+            <h2>Cart</h2>
+            <div id="cart-items"></div>
+            <p>Total: $<span id="cart-total">0.00</span></p>
+        </div>
+    </div>
+
+    <script>
+        const apiBaseUrl = 'http://127.0.0.1:5000';
+
+        async function fetchProducts() {
+            const response = await fetch(`${apiBaseUrl}/parts?offset=0&limit=20`);
+            const products = await response.json();
+            displayProducts(products);
+        }
+
+        function displayProducts(products) {
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = '';
+            products.forEach(product => {
+                const productDiv = document.createElement('div');
+                productDiv.className = 'product';
+                productDiv.innerHTML = `
+                    <div class="product-details">
+                        <img src="${product.image_url}" alt="${product.name}">
+                        <div class="product-info">
+                            <h3>${product.name}</h3>
+                            <p>${product.description}</p>
+                            <p>Price: $${product.price}</p>
+                            <button onclick="addToCart(${product.id})">Add to Cart</button>
+                        </div>
+                    </div>
+                `;
+                productList.appendChild(productDiv);
+            });
+        }
+
+        async function searchProducts() {
+            const query = document.getElementById('search').value;
+            const response = await fetch(`${apiBaseUrl}/search?query=${query}`);
+            const products = await response.json();
+            displayProducts(products);
+        }
+
+        async function addToCart(productId) {
+            await fetch(`${apiBaseUrl}/cart/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: productId })
+            });
+            updateCart();
+        }
+
+        async function updateCart() {
+            const response = await fetch(`${apiBaseUrl}/cart/total`);
+            const { total_price } = await response.json();
+            document.getElementById('cart-total').textContent = total_price.toFixed(2);
+
+            const cartItemsResponse = await fetch(`${apiBaseUrl}/cart`);
+            const cartItems = await cartItemsResponse.json();
+            const cartItemsDiv = document.getElementById('cart-items');
+            cartItemsDiv.innerHTML = '';
+            cartItems.forEach(item => {
+                const cartItemDiv = document.createElement('div');
+                cartItemDiv.className = 'cart-item';
+                cartItemDiv.innerHTML = `
+                    <span>${item.name}</span>
+                    <button onclick="removeFromCart(${item.id})">Remove</button>
+                `;
+                cartItemsDiv.appendChild(cartItemDiv);
+            });
+        }
+
+        async function removeFromCart(productId) {
+            await fetch(`${apiBaseUrl}/cart/remove`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: productId })
+            });
+            updateCart();
+        }
+
+        fetchProducts();
+        updateCart();
+    </script>
+</body>
+</html>
