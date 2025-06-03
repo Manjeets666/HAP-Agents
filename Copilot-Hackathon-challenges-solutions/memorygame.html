@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .card {
+            width: 100px;
+            height: 100px;
+            background-color: #007bff;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        .card.hidden {
+            background-color: #ccc;
+            color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <h1>Memory Game</h1>
+    <div id="game-info">
+        <p>Player 1 Score: <span id="player1-score">0</span></p>
+        <p>Player 2 Score: <span id="player2-score">0</span></p>
+        <p>Current Player: <span id="current-player">1</span></p>
+    </div>
+    <div class="grid" id="grid"></div>
+
+    <script>
+        const GRID_SIZE = 4;
+        const symbols = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E', 'F', 'F', 'G', 'G', 'H', 'H'];
+        let revealed = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
+        let scores = [0, 0];
+        let currentPlayer = 0;
+        let flippedCards = [];
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createGrid() {
+            const grid = document.getElementById('grid');
+            shuffle(symbols);
+            const cards = symbols.map((symbol, index) => {
+                const card = document.createElement('div');
+                card.className = 'card hidden';
+                card.dataset.symbol = symbol;
+                card.dataset.index = index;
+                card.textContent = symbol;
+                card.addEventListener('click', handleCardClick);
+                return card;
+            });
+
+            cards.forEach(card => grid.appendChild(card));
+        }
+
+        function handleCardClick(event) {
+            const card = event.target;
+            if (!card.classList.contains('hidden') || flippedCards.length === 2) {
+                return;
+            }
+
+            card.classList.remove('hidden');
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            if (card1.dataset.symbol === card2.dataset.symbol) {
+                scores[currentPlayer]++;
+                document.getElementById(`player${currentPlayer + 1}-score`).textContent = scores[currentPlayer];
+                flippedCards = [];
+                if (scores.reduce((a, b) => a + b) === symbols.length / 2) {
+                    setTimeout(() => alert('Game Over!'), 500);
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.add('hidden');
+                    card2.classList.add('hidden');
+                    flippedCards = [];
+                }, 1000);
+            }
+            currentPlayer = 1 - currentPlayer;
+            document.getElementById('current-player').textContent = currentPlayer + 1;
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
